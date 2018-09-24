@@ -50,6 +50,9 @@ def process_payload(e):
         t = e.get_content_type()
         # are there any more formats we should consider?
         if t in ["text/plain", "text/html"]:
+            encoding = e.get('Content-Transfer-Encoding')
+            if encoding != None:
+                encoding = encoding.lower()
             payload = e.get_payload(decode=True)
 
             # only clean proofpoint-encoded URLs--the "urldefense"
@@ -63,6 +66,10 @@ def process_payload(e):
 
             # modify the payload in place
             e.set_payload(payload_clean)
+            if encoding == "base64":
+                email.encoders.encode_base64(e)
+            elif encoding == "quoted-printable":
+                email.encoders.encode_quopri(e)
 
 
 if __name__ == '__main__':

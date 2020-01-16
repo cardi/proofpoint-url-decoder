@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Written in 2016 by Calvin Ardi <calvin@isi.edu>
@@ -26,16 +26,15 @@ Returns:
 """
 
 import sys
-import urllib
-import urlparse
+import urllib.request, urllib.parse, urllib.error
 
 if __name__ == '__main__':
   if len(sys.argv) != 2:
     sys.exit('Usage: %s encoded_url' % sys.argv[0])
-  
+
   #
   # proofpoint "protected" URLs take the form of:
-  # 
+  #
   #   https://urldefense.proofpoint.com/v2/url?[params]
   #
   # where [params] is described below
@@ -54,14 +53,14 @@ if __name__ == '__main__':
   #  's' might be a signature or checksum
   #
 
-  query  = urlparse.urlparse(sys.argv[1]).query
-  param  = urlparse.parse_qs(query)
+  query  = urllib.parse.urlparse(sys.argv[1]).query
+  param  = urllib.parse.parse_qs(query)
 
   if 'u' not in param:
     sys.exit('ERROR: check if URL is a proofpoint URL')
   else:
     u   = (param['u'][0].replace('-', '%')
                         .replace('_', '/'))
-    url = urllib.unquote(u)
+    url = urllib.parse.unquote(u)
 
-    print url
+    print(url)

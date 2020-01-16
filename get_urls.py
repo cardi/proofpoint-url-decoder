@@ -19,7 +19,7 @@
 #   or in mutt (or your favorite email client), pipe email to this script
 #
 
-import email
+import email, email.policy
 import fileinput
 import re
 import sys
@@ -49,7 +49,7 @@ def process_payload(e):
         t = e.get_content_type()
         if t in ["text/plain", "text/html"]:
             print("type: %s" % t)
-            urls = re.findall(URL_REGEX, str(e.get_payload(decode=True)))
+            urls = re.findall(URL_REGEX, e.get_content())
             for u in urls:
                 if "urldefense.proofpoint.com" in u:
                     u = decode_ppurl(u)
@@ -57,5 +57,6 @@ def process_payload(e):
             print("")
 
 if __name__ == '__main__':
-    e = email.message_from_string("".join(sys.stdin.readlines()))
+    # use the "new" 3.6+ API: https://stackoverflow.com/a/48101684
+    e = email.message_from_string("".join(sys.stdin.readlines()), policy=email.policy.default)
     process_payload(e)

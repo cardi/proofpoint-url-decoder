@@ -17,7 +17,7 @@
 # usage: cat email | ./decode_email.py > email.cleaned
 #
 
-import email
+import email, email.policy, email.message
 import fileinput
 import re
 import sys
@@ -47,12 +47,13 @@ def process_payload(e):
             process_payload(p)
     else:
         t = e.get_content_type()
-        # are there any more formats we should consider?
+        # XXX are there any more formats we should consider?
         if t in ["text/plain", "text/html"]:
             encoding = e.get('Content-Transfer-Encoding')
             if encoding != None:
                 encoding = encoding.lower()
-            payload = str(e.get_payload(decode=True))
+
+            payload = e.get_content()
 
             # only clean proofpoint-encoded URLs--the "urldefense"
             # prefix might be different across installations
@@ -63,18 +64,33 @@ def process_payload(e):
                        else match.group(), \
                      payload)
 
-            # modify the payload in place
-            e.set_payload(payload_clean)
-            if encoding == "base64":
-                email.encoders.encode_base64(e)
-            elif encoding == "quoted-printable":
-                email.encoders.encode_quopri(e)
+            # modify the payload in place, which also sets the following:
+            #
+            #   Content-Type: text/plain, charset="utf-8"
+            #   Content-Transfer-Encoding: 7bit
+            e.set_content(payload_clean)
 
+            # set content-type correctly, if we originally had text/html
+            del e['Content-Type']
+            charset = e.get_content_charset()
+            if charset == None:
+                charset = "utf-8"
+            e.add_header('Content-Type', t, charset=charset)
+
+            # XXX reset content-transfer-encoding header?
+            #
+            # set_content should take care of encoding, although it defaults to
+            # 7bit. this might be problematic if we processed base64-encoded
+            # parts and re-encoded to 7bit, but text/plain and text/html
+            # _shouldn't_ be in base64 encoding anyways?
+            #
+            # python3.7 email APIs doesn't seem to have an easy way to deal
+            # with changing the cte?
 
 if __name__ == '__main__':
     # read email from STDIN
-    e = email.message_from_string("".join(sys.stdin.readlines()))
+    e = email.message_from_string("".join(sys.stdin.readlines()), policy=email.policy.default)
     # process and replace URLs in place
     process_payload(e)
     # write email to STDOUT
-    sys.stdout.write(str(e))
+    print(e)

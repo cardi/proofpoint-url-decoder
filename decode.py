@@ -263,6 +263,25 @@ def decode_ppv3(mangled_url, unquote_url=False):
     return cleaned_url
 
 
+def decode(mangled_url, unquote_url=False):
+    parsed_url = urllib.parse.urlparse(mangled_url)
+
+    if (
+        parsed_url.netloc == "urldefense.proofpoint.com"
+        and parsed_url.path.startswith("/v2/")
+    ) or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/")):
+        cleaned_url = decode_ppv2(mangled_url)
+    elif (
+        parsed_url.netloc == "urldefense.com" and parsed_url.path.startswith("/v3/")
+    ) or (parsed_url.path.startswith("urldefense.com/v3/")):
+        cleaned_url = decode_ppv3(mangled_url, unquote_url)
+    else:
+        # assume URL hasn't been mangled
+        return mangled_url
+
+    return cleaned_url
+
+
 DEBUG = False
 
 if __name__ == "__main__":
@@ -278,21 +297,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    url = args.url
-    parsed_url = urllib.parse.urlparse(url)
-
-    if (
-        parsed_url.netloc == "urldefense.proofpoint.com"
-        and parsed_url.path.startswith("/v2/")
-    ) or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/")):
-        cleaned_url = decode_ppv2(url)
-    elif (
-        parsed_url.netloc == "urldefense.com" and parsed_url.path.startswith("/v3/")
-    ) or (parsed_url.path.startswith("urldefense.com/v3/")):
-        cleaned_url = decode_ppv3(url, args.unquote)
-    else:
-        # assume URL hasn't been mangled
-        print(url)
-        sys.exit(0)
+    cleaned_url = decode(args.url, args.unquote)
 
     print(cleaned_url)

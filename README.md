@@ -55,6 +55,11 @@ python3 -v decode_test.py
 Feel free to contribute code or send comments, suggestions, bugs to
 <calvin@isi.edu>.
 
+## Development Notes and Roadmap
+
+For now, to keep each script independent, `decode_ppv2()` and
+`decode_ppv3` are duplicated in each script.
+
 ## LICENSE
 
 [CC0 1.0 Universal](./LICENSE)

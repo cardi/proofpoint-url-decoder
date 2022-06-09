@@ -19,22 +19,41 @@ Some reasons why Proofpoint is harmful (a non-exhaustive list):
 
 ## Usage
 
+Each program can be used standalone: pick and use the Python script that
+is most relevant to your use case.
+
 There are several files of note:
 
-* `decode.py`: reads as input a string, outputs a clean URL
+* `decode.py`: reads a URL as an input parameter, outputs a clean URL to `STDOUT`
+
+  Example:
+  ```shell
+  $ set +H   # disable ! history substitution
+  $ ./decode.py "https://urldefense.com/v3/__http://www.example.com__;!!foo!bar$"
+  http://www.example.com
+  ```
 * `get_urls.py`: reads as input an email (from `STDIN`), extracts and
-  outputs clean URLs
+  outputs clean URLs to `STDOUT`
 * `decode_email.py`: reads as input an email (from `STDIN`), and
-  outputs the same email with clean URLs
+  outputs the same email with clean URLs to `STDOUT`
 
-Example:
+  Example:
+  ```shell
+  $ cat email_message | ./decode_email.py > email_message.cleaned
+  ```
 
-    cat email_message | ./decode_email.py > email_message.cleaned
+### Tests
+
+There are some unit tests:
+
+```shell
+python3 -v decode_test.py
+```
 
 ## Contributing
 
 Feel free to contribute code or send comments, suggestions, bugs to
-calvin@isi.edu. 
+<calvin@isi.edu>.
 
 ## LICENSE
 

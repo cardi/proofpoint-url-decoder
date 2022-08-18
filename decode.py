@@ -16,14 +16,16 @@
 """This snippet prints out an unmodified proofpoint "protected" (i.e., mangled) URL.
 
 Usage:
-    decode.py [-h] [--unquote] url
+    decode.py [-h] [--debug] [--unquote] [--verbose] url
 
 Args:
     url         a proofpoint url (usually starts with urldefense.proofpoint.com or urldefense.com)
 
 Optional Args:
-    -h, --help  show this help message and exit
-    --unquote   unquote URL (e.g., '%7B' -> '{')
+    -h, --help     show this help message and exit
+    --debug, -d    debugging trace mode (via pdb)
+    --unquote      unquote cleaned URL (e.g., '%7B' -> '{')
+    --verbose, -v  print more debugging output
 
 Returns:
     A decoded (and optionally, unquoted) URL string.
@@ -34,12 +36,17 @@ import argparse
 import base64
 import re
 import sys
+import pdb
 import urllib.request, urllib.parse, urllib.error
+
+DEBUG = False
+
 
 #
 # proofpoint "protected" v2 URLs take the form of:
 #
 #   https://urldefense.proofpoint.com/v2/url?[params]
+#   https://urldefense.com/v2/url?[params]
 #
 # where [params] is described below
 #
@@ -267,9 +274,16 @@ def decode(mangled_url, unquote_url=False):
     parsed_url = urllib.parse.urlparse(mangled_url)
 
     if (
-        parsed_url.netloc == "urldefense.proofpoint.com"
-        and parsed_url.path.startswith("/v2/")
-    ) or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/")):
+        (
+            (
+                parsed_url.netloc == "urldefense.proofpoint.com"
+                or parsed_url.netloc == "urldefense.com"
+            )
+            and parsed_url.path.startswith("/v2/")
+        )
+        or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/"))
+        or (parsed_url.path.startswith("urldefense.com/v2/"))
+    ):
         cleaned_url = decode_ppv2(mangled_url)
     elif (
         parsed_url.netloc == "urldefense.com" and parsed_url.path.startswith("/v3/")
@@ -282,20 +296,37 @@ def decode(mangled_url, unquote_url=False):
     return cleaned_url
 
 
-DEBUG = False
-
 if __name__ == "__main__":
-    DEBUG and print("\n\n")
-
     parser = argparse.ArgumentParser(description="decode proofpoint-mangled URLs")
-    parser.add_argument("url", type=str, help="URL to clean and decode")
+    parser.add_argument(
+        "--debug",
+        "-d",
+        help="debugging trace mode (via pdb)",
+        action="store_true",
+        default=False,
+    )
     parser.add_argument(
         "--unquote",
         action="store_true",
         default=False,
         help="unquote cleaned URL (e.g., '%%7B' -> '{')",
     )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        help="print more debugging output",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument("url", type=str, help="URL to clean and decode")
     args = parser.parse_args()
+
+    if args.verbose:
+        DEBUG = True
+
+    if args.debug:
+        DEBUG = True
+        pdb.set_trace()
 
     cleaned_url = decode(args.url, args.unquote)
 

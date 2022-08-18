@@ -35,6 +35,7 @@ URL_REGEX = r"""(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|
 # proofpoint "protected" v2 URLs take the form of:
 #
 #   https://urldefense.proofpoint.com/v2/url?[params]
+#   https://urldefense.com/v2/url?[params]
 #
 # where [params] is described below
 #
@@ -262,9 +263,16 @@ def decode(mangled_url, unquote_url=False):
     parsed_url = urllib.parse.urlparse(mangled_url)
 
     if (
-        parsed_url.netloc == "urldefense.proofpoint.com"
-        and parsed_url.path.startswith("/v2/")
-    ) or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/")):
+        (
+            (
+                parsed_url.netloc == "urldefense.proofpoint.com"
+                or parsed_url.netloc == "urldefense.com"
+            )
+            and parsed_url.path.startswith("/v2/")
+        )
+        or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/"))
+        or (parsed_url.path.startswith("urldefense.com/v2/"))
+    ):
         cleaned_url = decode_ppv2(mangled_url)
     elif (
         parsed_url.netloc == "urldefense.com" and parsed_url.path.startswith("/v3/")

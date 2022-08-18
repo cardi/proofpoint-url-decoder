@@ -16,6 +16,27 @@
 import unittest
 
 from decode import decode_ppv3
+from decode import decode_ppv2
+
+
+class TestDecodeV2Methods(unittest.TestCase):
+    def test_simple(self):
+        url = "https://urldefense.com/v2/url?u=https-3A__www.example.com&d=&c=&r=&m=&s=&e="
+        expected = "https://www.example.com"
+
+        self.assertEqual(decode_ppv2(url), expected)
+
+    def test_symbols_1(self):
+        url = "https://urldefense.com/v2/url?u=https-3A__www.example.com_-23-23-23-23-23foobar&d=&c=&r=&m=&s=&e="
+        expected = "https://www.example.com/#####foobar"
+
+        self.assertEqual(decode_ppv2(url), expected)
+
+    def test_symbols_2(self):
+        url = "https://urldefense.com/v2/url?u=https-3A__www.example.com_-40-40-21-40foobar&d=&c=&r=&m=&s=&e="
+        expected = "https://www.example.com/@@!@foobar"
+
+        self.assertEqual(decode_ppv2(url), expected)
 
 
 class TestDecodeV3Methods(unittest.TestCase):

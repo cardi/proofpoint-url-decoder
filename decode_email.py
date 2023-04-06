@@ -17,6 +17,7 @@
 # usage: cat email | ./decode_email.py > email.cleaned
 #
 
+import argparse
 import base64
 import email, email.policy, email.message
 import fileinput
@@ -329,13 +330,37 @@ def process_payload(e):
             # python3.7 email APIs doesn't seem to have an easy way to deal
             # with changing the cte?
 
+def process_text(e):
+    e_clean = \
+      re.sub(URL_REGEX, \
+             lambda match: decode(match.group()) \
+               if "urldefense" in match.group() \
+               else match.group(), \
+             e)
+    return e_clean
+
 
 if __name__ == "__main__":
-    # read email from STDIN
-    e = email.message_from_string(
-        "".join(sys.stdin.readlines()), policy=email.policy.default
+    parser = argparse.ArgumentParser(description="decode proofpoint-mangled URLs in emails")
+    parser.add_argument(
+        "--plaintext",
+        "-p",
+        help="decode URLs in plaintext input (not an email message)",
+        action="store_true",
+        default=False,
     )
-    # process and replace URLs in place
-    process_payload(e)
-    # write email to STDOUT
-    print(e)
+    args = parser.parse_args()
+
+    if args.plaintext:
+        e = "".join(sys.stdin.readlines())
+        e_clean = process_text(e)
+        print(e_clean)
+    else:
+        # read email from STDIN
+        e = email.message_from_string(
+            "".join(sys.stdin.readlines()), policy=email.policy.default
+        )
+        # process and replace URLs in place
+        process_payload(e)
+        # write email to STDOUT
+        print(e)

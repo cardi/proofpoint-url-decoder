@@ -278,16 +278,26 @@ def decode(mangled_url, unquote_url=False):
             (
                 parsed_url.netloc == "urldefense.proofpoint.com"
                 or parsed_url.netloc == "urldefense.com"
+                or parsed_url.netloc == "urldefense.us"
             )
             and parsed_url.path.startswith("/v2/")
         )
         or (parsed_url.path.startswith("urldefense.proofpoint.com/v2/"))
         or (parsed_url.path.startswith("urldefense.com/v2/"))
+        or (parsed_url.path.startswith("urldefense.us/v2/"))
     ):
         cleaned_url = decode_ppv2(mangled_url)
     elif (
-        parsed_url.netloc == "urldefense.com" and parsed_url.path.startswith("/v3/")
-    ) or (parsed_url.path.startswith("urldefense.com/v3/")):
+        (
+            (
+                parsed_url.netloc == "urldefense.com"
+                or parsed_url.netloc == "urldefense.us"
+            )
+            and parsed_url.path.startswith("/v3/")
+        )
+        or (parsed_url.path.startswith("urldefense.com/v3/"))
+        or (parsed_url.path.startswith("urldefense.us/v3/"))
+    ):
         cleaned_url = decode_ppv3(mangled_url, unquote_url)
     else:
         # assume URL hasn't been mangled

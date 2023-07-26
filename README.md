@@ -11,6 +11,9 @@ Some reasons why Proofpoint is harmful (a non-exhaustive list):
    user can no longer see what the actual URL is and must blindly trust in
    a third-party.
 
+   * URLs are visibly mangled and filled with garbage when reading email on
+     the command line using `mutt`, `alpine`, or `emacs`.
+
 2. Proofpoint **erodes your privacy**: in addition to someone else
    scanning your email there are unique identifiers embedded in each
    mangled URL that tie each URL to an individual user, and Proofpoint will

@@ -42,6 +42,80 @@ There are several files of note:
   $ cat email_message | ./decode_email.py > email_message.cleaned
   ```
 
+### fdm
+
+Add the following rules to your `.fdm.conf`:
+
+```
+# An action to save to the maildir ~/Mail/inbox.
+action "inbox" maildir "%h/Mail/inbox"
+action "backup" maildir "%h/Mail/backup"
+
+# Un-mangle ProofPoint URLs
+action "unmangle" rewrite "/path/to/proofpoint-url-decoder/decode_email.py"
+
+# (optional) keep a backup of all email
+match all action "backup" continue
+
+# 1. match all mail
+# 2. run the "unmangle" action on each message (rewrite URLs)
+# 3. run the "inbox" action on the resulting message (deliver to Maildir)
+match all action "unmangle" continue
+match all action "inbox"
+```
+
+Watch your log file (`.fdm.log`) for any issues. If you're processing a lot of
+mail at any one time, you may have to configure additional settings in `.fdm.conf`:
+see `man 5 fdm.conf` for more information.
+
+### procmail
+
+Add the following rule near the beginning of your `.procmailrc`:
+
+```
+:0 fw
+| /path/to/proofpoint-url-decoder/decode_email.py
+```
+
+You could match on and filter emails containing the `X-Proofpoint-*` header
+(which would be all emails on systems), but sometimes you will get emails
+forwarded to you that might not have this header and still contain the
+mangled URLs.
+
+It's a good idea to keep a backup copy of the emails, in case something
+in the processing pipeline goes wrong:
+
+```
+# copy all mail to the "backup" Maildir
+:0c
+backup/
+
+# pipe message through decode_email.py
+:0 fw
+| /path/to/proofpoint-url-decoder/decode_email.py
+
+# write resulting email into "inbox" Maildir
+:0:
+inbox/
+```
+
+You could also run `decode_email.py` on a copy of the email to test its
+functionality:
+
+```
+# create a working copy
+:0c
+{
+    # pipe message through decode_email.py
+    :0 fw
+    | /path/to/proofpoint-url-decoder/decode_email.py
+
+    # write resulting email into "testing" Maildir
+    :0:
+    testing/
+}
+```
+
 ### Tests
 
 There are some unit tests:

@@ -1,0 +1,18 @@
+MAIL=Mail
+ORGMAIL=Mail
+MAILDIR=Mail
+DEFAULT=Mail/inbox/
+LOGFILE=./procmail.log
+SHELL=/bin/bash
+
+# copy all mail to the backup folder
+:0c
+backup/
+
+# pipe message through decode_email.py
+:0 fw
+| ../../decode_email.py
+
+# put into inbox
+:0:
+inbox/

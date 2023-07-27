@@ -1,0 +1,16 @@
+default:
+	@just --list --justfile {{justfile()}}
+
+create-maildir:
+	mkdir -p Mail/{backup,inbox}/{cur,new,tmp}
+
+test-01:
+	procmail -p -m ./procmailrc <samples/01-no-urls
+
+test-02:
+	procmail -p -m ./procmailrc <samples/02-some-v3-urls
+
+run-mutt:
+	mutt -f Mail/inbox
+
+# vim: set ft=make noexpandtab :

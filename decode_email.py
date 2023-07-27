@@ -372,18 +372,50 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--preserve-mbox-from",
+        "-m",
+        help="Preserve the mbox format email separator (From <addr> <timestamp>) on the first line",
+        action="store_true",
+        default=False,
+    )
     args = parser.parse_args()
 
+    # read email from STDIN
+    e = "".join(sys.stdin.readlines())
+
     if args.plaintext:
-        e = "".join(sys.stdin.readlines())
         e_clean = process_text(e)
         print(e_clean)
     else:
-        # read email from STDIN
-        e = email.message_from_string(
-            "".join(sys.stdin.readlines()), policy=email.policy.default
-        )
+        # Email messages stored in an mbox file are delimited by a new line
+        # and text following the format:
+        #
+        #   From <email> <timestamp>
+        #
+        # For example:
+        #
+        #   From calvin@localhost  Thu Jan 01 00:00:00 1970
+        #
+        # Python's email package has support for this type of message
+        # (mailbox.mboxMessage) but may not preserve the timestamp.
+        # One could also use `formail` (part of procmail) to regenerate this line,
+        # but `formail` also refreshes the timestamp.
+        #
+        # We'll simply preserve the first line if it starts with "From ".
+        # Adding a more complex regex seems unnecessary here.
+        #
+        mbox_from = ""
+        if args.preserve_mbox_from:
+            if e.startswith("From "):
+                mbox_from = e.partition("\n")[0]
+                mbox_from += "\n"
+
+        # convert text to an email message
+        e = email.message_from_string(e, policy=email.policy.default)
+
         # process and replace URLs in place
         process_payload(e)
+
         # write email to STDOUT
-        print(e)
+        print(f"{mbox_from}{e}")

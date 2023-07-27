@@ -195,6 +195,12 @@ def decode_ppv3(mangled_url, unquote_url=False):
     p = re.compile("__(.*)__;(.*)!!")
     ps = p.search(parsed_url)
 
+    if ps is None:
+        DEBUG and print("%s is not a valid URL?" % parsed_url)
+
+        # return as is
+        return parsed_url
+
     url = ps.group(1)
     DEBUG and print(url)
 
@@ -310,12 +316,15 @@ def process_payload(e):
 
             # only clean proofpoint-encoded URLs--the "urldefense"
             # prefix might be different across installations
-            payload_clean = \
-              re.sub(URL_REGEX, \
-                     lambda match: decode(match.group()) \
-                       if "urldefense" in match.group() \
-                       else match.group(), \
-                     payload)
+            payload_clean = re.sub(
+                URL_REGEX,
+                lambda match: (
+                    decode(match.group())
+                    if "urldefense" in match.group()
+                    else match.group()
+                ),
+                payload,
+            )
 
             # modify the payload in place, which also sets the following:
             #
@@ -340,18 +349,22 @@ def process_payload(e):
             # python3.7 email APIs doesn't seem to have an easy way to deal
             # with changing the cte?
 
+
 def process_text(e):
-    e_clean = \
-      re.sub(URL_REGEX, \
-             lambda match: decode(match.group()) \
-               if "urldefense" in match.group() \
-               else match.group(), \
-             e)
+    e_clean = re.sub(
+        URL_REGEX,
+        lambda match: (
+            decode(match.group()) if "urldefense" in match.group() else match.group()
+        ),
+        e,
+    )
     return e_clean
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="decode proofpoint-mangled URLs in emails")
+    parser = argparse.ArgumentParser(
+        description="decode proofpoint-mangled URLs in emails"
+    )
     parser.add_argument(
         "--plaintext",
         "-p",

@@ -196,6 +196,12 @@ def decode_ppv3(mangled_url, unquote_url=False):
     p = re.compile("__(.*)__;(.*)!!")
     ps = p.search(parsed_url)
 
+    if ps is None:
+        DEBUG and print("%s is not a valid URL?" % parsed_url)
+
+        # return as is
+        return parsed_url
+
     url = ps.group(1)
     DEBUG and print(url)
 

@@ -121,6 +121,11 @@ class TestDecodeV3Methods(unittest.TestCase):
         expected = "http://www.example.com/###################################################################################################################################test"
         self.assertEqual(decode_ppv3(url), expected)
 
+    def test_incomplete_url_v3(self):
+        url = "https://urldefense.com/v3/__http://www.example.com/"
+        expected = url
+        self.assertEqual(decode_ppv3(url), expected)
+
 
 if __name__ == "__main__":
     unittest.main()

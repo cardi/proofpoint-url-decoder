@@ -45,6 +45,25 @@ There are several files of note:
   $ cat email_message | ./decode_email.py > email_message.cleaned
   ```
 
+### `decode_email.py`
+
+```
+usage: decode_email.py [-h] [--plaintext] [--preserve-mbox-from]
+
+decode proofpoint-mangled URLs in emails
+
+options:
+  -h, --help            show this help message and exit
+  --plaintext, -p       decode URLs in plaintext input (not an email message)
+  --preserve-mbox-from, -m
+                        Preserve the mbox format email separator (From <addr> <timestamp>) on the first line
+```
+
+## Integrating with Mail Delivery Agents
+
+`decode_email.py` can be integrated with [fdm](#fdm) and [procmail](#procmail)
+to automatically filter and unmangle URLs before being delivered to your inbox.
+
 ### fdm
 
 Add the following rules to your `.fdm.conf`:

@@ -127,6 +127,8 @@ There are some unit tests:
 python3 -v decode_test.py
 ```
 
+There are also some `procmail` tests: see [`procmail/`](procmail/).
+
 ## Contributing
 
 Feel free to contribute code or send comments, suggestions, bugs to

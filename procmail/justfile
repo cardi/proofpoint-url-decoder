@@ -1,14 +1,26 @@
 default:
 	@just --list --justfile {{justfile()}}
 
+
+# variables
+procmailrc := absolute_path("./procmailrc")
+
+
+# environment variables
+export FOOBAR := absolute_path(".")
+
+
 create-maildir:
 	mkdir -p Mail/{backup,inbox}/{cur,new,tmp}
 
 test-01:
-	procmail -p -m ./procmailrc <samples/01-no-urls
+	procmail -p -m {{procmailrc}} <samples/01-no-urls
 
 test-02:
-	procmail -p -m ./procmailrc <samples/02-some-v3-urls
+	procmail -p -m {{procmailrc}} <samples/02-some-v3-urls
+
+test-03:
+	procmail -p -m {{procmailrc}} <samples/03-mbox-1-message
 
 run-mutt:
 	mutt -f Mail/inbox

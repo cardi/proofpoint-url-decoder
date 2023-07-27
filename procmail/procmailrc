@@ -1,13 +1,23 @@
-MAIL=Mail
-ORGMAIL=Mail
-MAILDIR=Mail
-DEFAULT=Mail/inbox/
-LOGFILE=./procmail.log
+MAIL=$FOOBAR/Mail
+ORGMAIL=$FOOBAR/Mail
+MAILDIR=$FOOBAR/Mail
+DEFAULT=$FOOBAR/Mail/inbox/
+LOGFILE=procmail.log
 SHELL=/bin/bash
 
 # copy all mail to the backup folder
 :0c
-backup/
+test-backup/
+
+# fork and test preserving mbox from functionality
+:0c
+{
+    :0 fw
+    | ../../decode_email.py -m
+
+    :0:
+    mboxtest
+}
 
 # pipe message through decode_email.py
 :0 fw

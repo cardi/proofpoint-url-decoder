@@ -140,9 +140,10 @@ functionality:
 
 ### Tests
 
-There are some unit tests:
+There are some unit tests, with some [library dependencies](./requirements.txt):
 
 ```shell
+pip install -r requirements.txt
 python3 -v decode_test.py
 ```
 

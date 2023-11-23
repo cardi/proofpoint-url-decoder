@@ -14,6 +14,7 @@
 #
 
 import unittest
+from parameterized import parameterized
 
 from decode import decode_ppv3
 from decode import decode_ppv2
@@ -59,7 +60,9 @@ class TestDecodeV3Methods(unittest.TestCase):
         self.assertEqual(decode_ppv3(url), expected)
 
     def test_replace_one(self):
-        url = "https://urldefense.com/v3/__https://example.com/*newsletter__;Iw!!foo!bar$"
+        url = (
+            "https://urldefense.com/v3/__https://example.com/*newsletter__;Iw!!foo!bar$"
+        )
         expected = "https://example.com/#newsletter"
 
         self.assertEqual(decode_ppv3(url), expected)
@@ -124,6 +127,65 @@ class TestDecodeV3Methods(unittest.TestCase):
     def test_incomplete_url_v3(self):
         url = "https://urldefense.com/v3/__http://www.example.com/"
         expected = url
+        self.assertEqual(decode_ppv3(url), expected)
+
+
+class TestSequenceUTF8(unittest.TestCase):
+    @parameterized.expand(
+        [
+            [
+                0,
+                "https://urldefense.com/v3/__http://www.example.com/**Aa*.html__;w60j!!foo!bar$",
+                "http://www.example.com/ía#.html",
+            ],
+            [
+                1,
+                "https://urldefense.com/v3/__http://www.example.com/**Aa*a*.html__;w60jIw!!foo!bar$",
+                "http://www.example.com/ía#a#.html",
+            ],
+            [
+                2,
+                "https://urldefense.com/v3/__http://www.example.com/**B.html__;w60j!!foo!bar$",
+                "http://www.example.com/í#.html",
+            ],
+            [
+                3,
+                "https://urldefense.com/v3/__http://www.example.com/**C.html__;w60jIw!!foo!bar$",
+                "http://www.example.com/í##.html",
+            ],
+            [
+                4,
+                "https://urldefense.com/v3/__http://www.example.com/**D.html__;w60jIyM!!foo!bar$",
+                "http://www.example.com/í###.html",
+            ],
+            [
+                5,
+                "https://urldefense.com/v3/__http://www.example.com/**E.html__;w60jIyMj!!foo!bar$",
+                "http://www.example.com/í####.html",
+            ],
+            [
+                6,
+                "https://urldefense.com/v3/__http://www.example.com/**F.html__;w60jIyMjIw!!foo!bar$",
+                "http://www.example.com/í#####.html",
+            ],
+            [
+                "long chain of accents",
+                "https://urldefense.com/v3/__http://www.example.com/**_**5.html__;w6DDqMOsw7LDucOAw4jDjMOSw5nDocOpw63Ds8O6w73DgcOJw43Dk8Oaw53DosOqw67DtMO7w4LDisOOw5TDm8Ojw7HDtcODw5HDlcOkw6vDr8O2w7zDv8OEw4vDj8OWw5zFuMOlw4XDpsOGxZPFksOnw4fDsMOQw7jDmA!!foo!bar$",
+                "http://www.example.com/àèìòùÀÈÌÒÙáéíóúýÁÉÍÓÚÝâêîôûÂÊÎÔÛãñõÃÑÕäëïöüÿÄËÏÖÜŸåÅæÆœŒçÇðÐøØ.html",
+            ],
+            [
+                "accent-ascii sequence",
+                "https://urldefense.com/v3/__http://www.example.com/**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Aa**Ca**Aa.html__;w6DDqMOsw7LDucOAw4jDjMOSw5nDocOpw63Ds8O6w73DgcOJw43Dk8Oaw53DosOqw67DtMO7w4LDisOOw5TDm8Ojw7HDtcODw5HDlcOkw6vDr8O2w7zDv8OEw4vDj8OWw5zFuMOlw4XDpsOGxZPFksOnw4fDsMOQw7jDmA!!foo!bar$",
+                "http://www.example.com/àaèaìaòaùaÀaÈaÌaÒaÙaáaéaíaóaúaýaÁaÉaÍaÓaÚaÝaâaêaîaôaûaÂaÊaÎaÔaÛaãañaõaÃaÑaÕaäaëaïaöaüaÿaÄaËaÏaÖaÜaŸaåaÅaæaÆaœaŒaçaÇaðaÐøaØa.html",
+            ],
+            [
+                "utf-8 characters",
+                "https://urldefense.com/v3/__http://www.example.com/**E.html__;5L2g5aW9!!foo!bar$",
+                "http://www.example.com/你好.html",
+            ],
+        ]
+    )
+    def test_accent(self, name, url, expected):
         self.assertEqual(decode_ppv3(url), expected)
 
 

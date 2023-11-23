@@ -89,18 +89,18 @@ def decode_ppv2(mangled_url):
 # 	replacement string: ##
 # 	cleaned: http://www.example.com/#test#test
 #
-# however, if there are >=2 symbols that are encoded, it's mapped to something like
-# `**A`, `**B`, and so on.
+# however, if there are >=2 symbols/bytes that are encoded, it's mapped to
+# something like `**A`, `**B`, and so on.
 #
-# `**` means that there are at least 2 characters in a row
-# The character following is the number of characters (A == 2, B == 3, etc.)
+# `**` means that there are at least 2 bytes to replace
+# The character following is the number of bytes (A == 2, B == 3, etc.)
 #
 # example:
 #   mangled: http://www.example.com/**Dtest*test
 #   replacement string: ######
 #   cleaned: http://www.example.com/#####test#test
 #
-# after a "run" of a maximum of 65 characters, it simply repeats itself.
+# after a "run" of a maximum of 65 bytes, it simply repeats itself.
 #
 # example (replacement string consists of all `#`):
 #   mangled: http://www.example.com/**_test
@@ -223,19 +223,36 @@ def decode_ppv3(mangled_url, unquote_url=False):
     if len(replacement_b64) == 0:
         return url
 
-    DEBUG and print(replacement_b64)
+    DEBUG and print("replacement b64 = %s" % replacement_b64)
 
     # base64 decode replacement string
-    replacement_str = (base64.b64decode(replacement_b64 + "==")).decode(
+    #
+    # use `urlsafe_b64decode` as the base64-encoded string
+    # uses - and _ instead of + and /, respectively.
+    #
+    # See Section 5 in RFC4648
+    # <https://www.rfc-editor.org/rfc/rfc4648.html#page-7>.
+    replacement_str = (base64.urlsafe_b64decode(replacement_b64 + "==")).decode(
         "utf-8"
     )  # b64decode ignores any extra padding
-    DEBUG and print(replacement_str)
+    DEBUG and print(
+        "replacement string = %s (%d)"
+        % (replacement_str, len(replacement_str.encode("utf-8")))
+    )
+
+    # XXX just some debugging code
+    # for i in range(len(replacement_str)+1):
+    #    test = replacement_str[0:i]
+    #    print(f"{test} {len(test.encode('utf-8'))}")
 
     # replace `*` with actual symbols
     replacement_list = list(replacement_str)
     url_list = list(url)
 
+    DEBUG and print("replacement list = %s" % replacement_list)
+
     offset = 0
+    save_bytes = 0
     # this regex says: find ("*" but not "**") or ("**A", "**B", "**C", ..., "**-", "**_")
     for m in re.finditer("(?<!\*)\*(?!\*)|\*{2}[A-Za-z0-9-_]", url):
         DEBUG and print("%d %d %s" % (m.start(), m.end(), m.group(0)))
@@ -244,15 +261,73 @@ def decode_ppv3(mangled_url, unquote_url=False):
             # we only need to replace one character here
             url_list[m.start() + offset] = replacement_list.pop(0)
         elif m.group(0).startswith("**"):
-            # we need to replace a certain number of characters
+            # we need to replace a certain number of bytes
             # e.g., "foobar**Dfoo" --> "foobar#####foo"
-            num_chars = replacement_str_mapping[m.group(0)[-1]]
-            DEBUG and print("replacing {num_chars}".format(num_chars=num_chars))
+            num_bytes = replacement_str_mapping[m.group(0)[-1]]
+
+            DEBUG and print(f"replacing {num_bytes} + {save_bytes} bytes")
+
+            if save_bytes != 0:
+                num_bytes += save_bytes
+                save_bytes = 0  # reset
+            DEBUG and print(f"replacing {num_bytes} bytes total")
 
             # replace "**[A-Za-z0-9-_]" with replacement characters
             replacement_chars = list()
-            for i in range(num_chars):
-                replacement_chars.append(replacement_list.pop(0))
+
+            i = 0
+            while i < num_bytes:
+                # previously we assumed that the replacement_str_mapping
+                # referred to the number of characters, but it actually
+                # represents the number of bytes to copy over, given the UTF-8
+                # encoding. so we replace the for loop with a while loop and
+                # increment a counter with the size of each character being
+                # replaced.
+                replacement_char = replacement_list.pop(0)
+                replacement_chars.append(replacement_char)
+                i += len(replacement_char.encode("utf-8"))
+
+                DEBUG and print(
+                    f"the character {replacement_char} takes {len(replacement_char.encode('utf-8'))} bytes - running total: {i}"
+                )
+
+                # there seems to be an edge case at the boundaries: if we have
+                # a long consecutive list of non-ascii characters to replace,
+                # pp seems to break it up into segments of length 65 (e.g.,
+                # num_bytes % 65). this doesn't quite work if each character is
+                # of size 2, and we'll hit an empty list sooner than later and
+                # get an error.
+                #
+                # we will resolve this by checking the _next_ character in the
+                # list and checking if its size will be greater than (num_bytes
+                # - i), where `i` is the current number of bytes we've replaced
+                # so far. if so, "save" the difference and add it on to the
+                # next segment.
+                #
+                # for example, if we have 124 bytes to replace, pp will break
+                # it up into 65 (`**_`) and 59 (`**5`). all of the replacement
+                # characters are 2 bytes, which means when we get to byte 64,
+                # we have 1 byte left. similarly the 59 bytes in the next
+                # segment doesn't make sense, because again all replacement
+                # characters are 2 bytes. so we'll "save" the 1 byte and add it
+                # on to the next segment (i.e., we're really treating this as
+                # segments of 64 (`**-`) and 60 (`**6`)
+                #
+                # (presumably we could also search for and combine sequences of
+                # replacement strings, i.e., if we see `**_**5`, we can combine
+                # the two and add them together to get 65+59=124, and so on.)
+                #
+                if len(replacement_list) != 0:
+                    next_replacement_char = replacement_list[0]
+                    next_replacement_char_size = len(
+                        next_replacement_char.encode("utf-8")
+                    )
+
+                    if next_replacement_char_size > (num_bytes - i):
+                        # save the difference and add it to the next segment.
+                        save_bytes = num_bytes - i
+                        # break out of loop
+                        i += save_bytes
 
             # replace a sub-list with a replacement list
             # works nicely even if the replacement list is shorter than the sub-list
@@ -260,7 +335,7 @@ def decode_ppv3(mangled_url, unquote_url=False):
 
             # update offset as we're modifying url_list in place
             # (m.start() and m.end() refer to positions in the original `url` string)
-            offset += num_chars - 3
+            offset += len(replacement_chars) - 3
         else:
             # shouldn't get here
             DEBUG and print("shouldn't get here")

@@ -75,7 +75,7 @@ class TestDecodeV3Methods(unittest.TestCase):
 
     def test_complex_unquoted_1(self):
         url = "https://urldefense.com/v3/__http://example.com/?=a1!b2@c3*d4$5e*6*5E7&8*9(10*7C*5C**B7D*7B__;IyUlKiUlW10lJQ!!foo!bar$"
-        expected = "http://example.com/?=a1!b2@c3#d4$5e%6^7&8*9(10|\[]}{"
+        expected = r"http://example.com/?=a1!b2@c3#d4$5e%6^7&8*9(10|\[]}{"
 
         self.assertEqual(decode_ppv3(url, True), expected)
 

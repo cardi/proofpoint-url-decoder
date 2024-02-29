@@ -254,7 +254,7 @@ def decode_ppv3(mangled_url, unquote_url=False):
     offset = 0
     save_bytes = 0
     # this regex says: find ("*" but not "**") or ("**A", "**B", "**C", ..., "**-", "**_")
-    for m in re.finditer("(?<!\*)\*(?!\*)|\*{2}[A-Za-z0-9-_]", url):
+    for m in re.finditer(r"(?<!\*)\*(?!\*)|\*{2}[A-Za-z0-9-_]", url):
         DEBUG and print("%d %d %s" % (m.start(), m.end(), m.group(0)))
 
         if m.group(0) == "*":
